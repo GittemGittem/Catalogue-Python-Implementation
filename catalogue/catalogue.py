@@ -115,17 +115,3 @@ class Catalogue:
                     raise ValueError(f"Can only set item to 'Item' type not '{value.__class__.__name__}'")
             case name, value:
                 super().__setattr__(name, value)
-            
-x = Catalogue("VALUES", step=2)
-y = Catalogue()
-x.X = x.Item(0)["stored_value"]
-B = y.Item()[x.X]
-Z = Item(0)[B]
-y.D = Z
-x.D = Z
-
-print(x.X)
-print(B)
-print(Z)
-print(y.D.PARENT)
-print(x.D)
