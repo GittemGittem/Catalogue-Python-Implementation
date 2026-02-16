@@ -1,7 +1,6 @@
-import catalogue
+from catalogue import Catalogue
 
-class cat(catalogue.Catalogue):
-    X = None, 12023
+with Catalogue() as Colors:
+    Colors.RED = Catalogue.ID(10)[1]
     
-
-print(cat.X)
+print(Colors.RED)
