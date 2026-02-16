@@ -1,6 +1,6 @@
 from catalogue import Catalogue
 
 with Catalogue() as Colors:
-    Colors.RED = Catalogue.ID(10)[1]
+    Colors.RED = 1, 2, 3, Catalogue.ID(10)
     
 print(Colors.RED)
