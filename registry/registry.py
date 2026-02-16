@@ -112,9 +112,3 @@ class Registry:
         return instance
     def __getitem__(self, id):
         return self.ids[id]
-    
-class TileID(ID): pass
-TileID.alias("color")
-
-GRASS = TileID(0, "#1D7A3A")
-print(GRASS.color)
