@@ -1,114 +1,79 @@
-class ID:
+def not_implemented(*args, **kwargs):
+    raise NotImplementedError("This method is not implemented.")
+
+class Id:
+    __slots__ = ("__id",)
+    __ids__ = {}
+    
+    def __new__(cls, id):
+        if id in cls.__ids__:
+            return cls.__ids__[id]
+        else:
+            instance = super().__new__(cls)
+            instance.__id = id
+            cls.__ids__[id] = instance
+            return instance
+    
     @classmethod
-    def alias(cls, name):
-        def get_value(self):
-            return self.VALUE
-        def set_value(self, value):
-            self.VALUE = value
-        setattr(cls, name, property(get_value, set_value))
-        
-    __slots__ = ("__id", "VALUE")
-    def __init__(self, id, value=None):
-        self.__id = id
-        self.VALUE = value
+    def Sub(cls, name):
+        return type(name, (cls,), {"__ids__": {}})
+    
     @property
     def ID(self):
         return self.__id
     
     def __repr__(self):
-        value = getattr(self, "VALUE", None)
-        if value is not None and value != "": value = " -> " + str(value)
-        return f"|ID:{self.ID}{value or ''}|"
+        return f"|ID:{self.__id}|"
     
-    def __eq__(self, other):
-        match other:
-            case other if isinstance(other, ID):
-                return self.ID == other.ID
-            case other if isinstance(other, int):
-                return self.ID == other
-            case _:
-                raise TypeError(f"Cannot compare '{self.__class__.__name__}' with '{other.__class__.__name__}'")
-    def __ne__(self, other):
-        return not self.__eq__(other)
-    def __gt__(self, other):
-        match other:
-            case other if isinstance(other, ID):
-                return self.ID > other.ID
-            case other if isinstance(other, int):
-                return self.ID > other
-            case _:
-                raise TypeError(f"Cannot compare '{self.__class__.__name__}' with '{other.__class__.__name__}'")
-    def __lt__(self, other):
-        match other:
-            case other if isinstance(other, ID):
-                return self.ID < other.ID
-            case other if isinstance(other, int):
-                return self.ID < other
-            case _:
-                raise TypeError(f"Cannot compare '{self.__class__.__name__}' with '{other.__class__.__name__}'")
-    def __ge__(self, other):
-        return self.__gt__(other) or self.__eq__(other)
-    def __le__(self, other):
-        return self.__lt__(other) or self.__eq__(other)
+    def __int__(self):
+        return self.__id
     
-    def __and__(self, other):
-        if self.VALUE is not None:
-            if isinstance(other, ID):
-                return self.VALUE == other.VALUE
-            return self.VALUE == other
-        return False
-        
+    def __hash__(self):
+        return hash((self.__id, self.__class__))
+
 class Registry:
+    __slots__ = ("values", "_in_full_context", "id_class", "step", "next_id")
     
-    def seal(self):
-        self.__sealed = True
-    def unseal(self):
-        self.__sealed = False
+    
+    def full_context(self):
+        self._in_full_context = True
+        return self
+    def exit_full_context(self):
+        self._in_full_context = False
+        return self
+    
+    def __init__(self, step = 1, id_class=Id):
+        if isinstance(id_class, str):
+            id_class = Id.Sub(id_class)
+        self.id_class = id_class
         
-    def toggle_seal(self):
-        self.__sealed = not self.__sealed
-    
-    def is_sealed(self):
-        return self.__sealed
-    
-    
-    def __enter__(self):
-        self.unseal()
-        return self.register
-    
-    def __exit__(self, *exc_args):
-        self.seal()
-    
-    def __init__(self, name=None, step=1, __id__=ID):
-        self.step = step
         self.next_id = 0
-        self.name = name
-        self.__id_class = __id__
-        self.__sealed = False
+        self.step = step
+        self.values = {}
     
-        self.ids = {}
+    def __getitem__(self, id:Id):
+        return self.values[id]
     
-    def __auto__(self, id):
+    def __setitem__(self, id:Id, value):
+        self.values[id] = value
+    
+    def __auto__(self, id=None):
         if id is None:
             id = self.next_id
         self.next_id = id + self.step
         return id
+        
     
-    def register(self, value:object=None, id:int=None) -> ID:
-        if isinstance(value, ID):
-            raise TypeError("Cannot set ID's value to an ID")
-        if self.is_sealed(): # but if it has been locked, it can no longer be used unless context managered again
-            name = getattr(self, 'name', None)
-            if name is not None and name != "": name = f" '{name}'"
-            raise SyntaxError(f"Cannot use a Registry{name or ""} while it is sealed")
+    def __create_id__(self, id=None, value=None):
+        id = self.id_class(self.__auto__(id))
+        self.values[id] = value
+        return id
+    
+    def __enter__(self):
+        if self._in_full_context:
+            return self.__create_id__, self
+        return self.__create_id__
+        
 
-        id = self.__auto__(id)
-        if id in self.ids:
-            instance = self.ids[id]
-        else:
-            instance = self.__id_class(id)
-            self.ids[id] = instance
-        instance.VALUE = value
-        return instance
-    def __getitem__(self, id):
-        return self.ids[id]
+    def __exit__(self, *exc_args):
+        self.exit_full_context()
