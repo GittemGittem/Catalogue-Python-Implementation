@@ -7,7 +7,7 @@ from registry import Registry, registry, Id # import it's features like this
 #CREATING ID OBJECTS
 
 # an id can be used on it's own without a registry
-# but an id must be passed in manually this way
+# but an integer must be passed in manually this way
 X = Id(0)
 Y = Id(0)
 print(X) # -> |Id:0|
@@ -101,18 +101,5 @@ print(Mynums["X"]) # -> 0
 # the naming behavior is possible with a regular registry, its just not automatic
 # because I was trying to reduce overhead to the absolute minimum
 # it probably would only be a tiny tiny amount of time
-# but I wanted to design this to be AS FAST AS POSSIBLE
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# but I wanted to design this to be AS FAST AS POSSIBLE, or at least as fast
+# as I could make it with python

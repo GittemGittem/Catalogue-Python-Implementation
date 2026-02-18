@@ -12,6 +12,38 @@ class Id:
             cls.__ids__[id] = instance
             return instance
     
+    def __eq__(self, other):
+        if isinstance(other, Id):
+            return self.__id == other.__id
+        elif isinstance(other, int):
+            return self.__id == other
+        else:
+            raise NotImplementedError(f"Cannot compare equivalence of type '{self.__class__.__name__}' {self} with type {other.__class__.__name__} {other}")
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    def __gt__(self, other):
+        if isinstance(other, Id):
+            return self.__id > other.__id
+        elif isinstance(other, int):
+            return self.__id > other
+        else:
+            raise NotImplementedError(f"Cannot compare instances of type '{self.__class__.__name__}' {self} and type {other.__class__.__name__} {other}")
+    def __lt__(self, other):
+        if isinstance(other, Id):
+            return self.__id < other.__id
+        elif isinstance(other, int):
+            return self.__id < other
+        else:
+            raise NotImplementedError(f"Cannot compare instances of type '{self.__class__.__name__}' {self} and type {other.__class__.__name__} {other}")
+    
+    def __ge__(self, other):
+        return self.__gt__(other) or self.__eq__(other)
+    def __le__(self, other):
+        return self.__lt__(other) or self.__eq__(other)
+    
+    def __matmul__(self, other):
+        return self is other
+    
     @classmethod
     def New(cls, name):
         return type(name, (cls,), {"__ids__": {}})
@@ -89,7 +121,7 @@ class Registry:
 
 def __is_entry(name:str) -> bool:
     return name.isupper() and not (name.startswith('__') or name.endswith('__'))
-def registry(cls):
+def registry(cls) -> Registry:
     if hasattr(cls, '__is_entry__'):
         is_entry = cls.__is_entry__
     else:
@@ -104,8 +136,5 @@ def registry(cls):
                         if isinstance(value, Id):
                             reg.__named__[attr_name] = reg.auto(id=id)
                         else:
-                            reg.__named__[attr_name] = reg.auto(value)                         
+                            reg.__named__[attr_name] = reg.auto(value)                 
     return reg
-
-                
-
