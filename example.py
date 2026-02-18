@@ -49,9 +49,24 @@ colors = Registry(step=1, id_class=ColorId)
 RED = colors.auto((255, 0, 0), 10)
 print(RED) # -> |ColorId:10|
 
+# you can also use the 'lshift' (<<) and 'matmul' (@) operators to edit the registry
+EMPTY = colors << Id(-1) # store |ColorId:0|
+YELLOW = colors << (255, 255, 0) # store (255, 255, 0) at |ColorId:1|
+BLUE = colors << (0, 0, 255) @ Id(11) # store (0, 0, 255) at |ColorId:11|
+GREEN = colors << Id(12) @ (0, 255, 0) # store (0, 255, 0) at |ColorId:12|
+
+
+# ERROR = colors << Id(21) | Id(22) # raises an error,
+# you cannot use two Id's (Storing an Id in the registry is not allowed)
+
+
 # retrieving a stored value from a registry
 
 print(colors[RED]) # -> (255, 0, 0)
+print(colors[EMPTY]) # -> None
+
+# you can also use 'rshift' (>>) to retrieve a value from the Registry object
+print(colors >> GREEN) # -> (0, 255, 0)
 
 
 # SEALING A REGISTRY OBJECT
@@ -79,6 +94,7 @@ colors.unseal()
 class Mynums:
     Y = 1 # store 0 as a value at |Mynums:0|
     X = 0, Id(0) # change value at |Mynums:0| to 0
+    X = 0 @ Id(0) # you can still use 'matmul' (@) here
     
     # now both names X and Y point to the same value
     
@@ -92,11 +108,11 @@ class Mynums:
 # The Id's can be accessed by their names
 
 print(Mynums.X) # -> |Mynums:0|
-print(Mynums[Mynums.Y]) # -> 0
+print(Mynums[Mynums.X]) # -> 0
 
 # you can also access the value stored at an Id by passing it's name as a string
 
-print(Mynums["X"]) # -> 0
+print(Mynums["Z"]) # -> None
 
 # the naming behavior is possible with a regular registry, its just not automatic
 # because I was trying to reduce overhead to the absolute minimum

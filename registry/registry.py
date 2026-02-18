@@ -3,14 +3,19 @@ class Id:
     __slots__ = ("__id",)
     __ids__ = {}
     
-    def __new__(cls, id:int):
-        if id in cls.__ids__:
-            return cls.__ids__[id]
+    def __new__(cls, id:'int|Id'):
+        if isinstance(id, int):
+            if id in cls.__ids__:
+                return cls.__ids__[id]
+            else:
+                instance = super().__new__(cls)
+                instance.__id = id
+                cls.__ids__[id] = instance
+                return instance
+        elif isinstance(id, Id): # convert Id into my id type
+            return cls(id.ID)
         else:
-            instance = super().__new__(cls)
-            instance.__id = id
-            cls.__ids__[id] = instance
-            return instance
+            return NotImplemented
     
     def __eq__(self, other):
         if isinstance(other, Id):
@@ -18,23 +23,28 @@ class Id:
         elif isinstance(other, int):
             return self.__id == other
         else:
-            raise NotImplementedError(f"Cannot compare equivalence of type '{self.__class__.__name__}' {self} with type {other.__class__.__name__} {other}")
+            return NotImplemented
     def __ne__(self, other):
-        return not self.__eq__(other)
+        if isinstance(other, Id):
+            return self.__id != other.__id
+        elif isinstance(other, int):
+            return self.__id != other
+        else:
+            return NotImplemented
     def __gt__(self, other):
         if isinstance(other, Id):
             return self.__id > other.__id
         elif isinstance(other, int):
             return self.__id > other
         else:
-            raise NotImplementedError(f"Cannot compare instances of type '{self.__class__.__name__}' {self} and type {other.__class__.__name__} {other}")
+            return NotImplemented
     def __lt__(self, other):
         if isinstance(other, Id):
             return self.__id < other.__id
         elif isinstance(other, int):
             return self.__id < other
         else:
-            raise NotImplementedError(f"Cannot compare instances of type '{self.__class__.__name__}' {self} and type {other.__class__.__name__} {other}")
+            return NotImplemented
     
     def __ge__(self, other):
         return self.__gt__(other) or self.__eq__(other)
@@ -42,14 +52,16 @@ class Id:
         return self.__lt__(other) or self.__eq__(other)
     
     def __matmul__(self, other):
-        return self is other
+        return (self, other)
+    def __rmatmul__(self, other):
+        return (other, self)
     
     @classmethod
     def New(cls, name):
         return type(name, (cls,), {"__ids__": {}})
     
     @property
-    def ID(self):
+    def ID(self) -> int:
         return self.__id
     
     def __repr__(self):
@@ -100,6 +112,8 @@ class Registry:
         self.values[id] = value
     
     def __auto__(self, id=None):
+        if isinstance(id, Id):
+            return id
         if id is None:
             id = self.next_id
         self.next_id = id + self.step
@@ -110,8 +124,31 @@ class Registry:
         if self.is_sealed():
             raise SyntaxError(f"Cannot add an entry to a sealed registry, {self}")
         id = self.id_class(self.__auto__(id))
+        if isinstance(value, Id):
+            raise TypeError(f"Cannot store an Id in the registry: '{value}' at '{id}'")
         self.values[id] = value
         return id
+    def __lshift__(self, other):
+        match other:
+            case id1, id2 if (isinstance(id1, Id) and isinstance(id2, Id)):
+                return self.auto(id1, id2)
+            case value, id if isinstance(id, Id):
+
+                return self.auto(value, id)
+            case id, value if isinstance(id, Id):
+
+                return self.auto(value, id)
+            case id if isinstance(id, Id):
+
+                return self.auto(id=id)
+            case value:
+
+                return self.auto(value)
+    def __rshift__(self, id):
+        return self.values[id]
+    
+    def name(self, id:Id, name):
+        self.__named__[name] = id
     
     def __enter__(self):
         return self
@@ -127,14 +164,9 @@ def registry(cls) -> Registry:
     else:
         is_entry = __is_entry
     with Registry(id_class=cls.__name__) as reg:
-        for attr_name in dir(cls):
+        for attr_name in vars(cls):
             if is_entry(attr_name):
-                match getattr(cls, attr_name):
-                    case value, id if isinstance(id, Id):
-                        reg.__named__[attr_name] = reg.auto(value, id.ID)
-                    case value:
-                        if isinstance(value, Id):
-                            reg.__named__[attr_name] = reg.auto(id=id)
-                        else:
-                            reg.__named__[attr_name] = reg.auto(value)                 
+                id = reg << getattr(cls, attr_name)
+                reg.name(id, attr_name)
+                
     return reg
