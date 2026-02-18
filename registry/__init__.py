@@ -1,2 +1,2 @@
-from registry.registry import Registry, ID, registry
+from registry.registry import Registry, Id, registry
 
