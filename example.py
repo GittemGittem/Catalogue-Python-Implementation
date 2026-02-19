@@ -115,6 +115,7 @@ print(Mynums[Mynums.X]) # -> 0
 print(Mynums["Z"]) # -> None
 
 # the naming behavior is possible with a regular registry, its just not automatic
+# @registry
 # because I was trying to reduce overhead to the absolute minimum
 # it probably would only be a tiny tiny amount of time
 # but I wanted to design this to be AS FAST AS POSSIBLE, or at least as fast
